@@ -11,3 +11,6 @@ DEBUG = True
 
 # TODO IMPLEMENT DATABASE URL
 SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:abolarin@localhost:5432/fyyurdb'
+SQLALCHEMY_TRACK_MODIFICATIONS = True
+
+WTF_CSRF_ENABLED = False

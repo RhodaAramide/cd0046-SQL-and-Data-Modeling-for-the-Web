@@ -1,9 +1,11 @@
-import sys
-import phonenumbers
 from datetime import datetime
 from flask_wtf import Form
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, URL
+from wtforms import (BooleanField, 
+                     DateTimeField, 
+                     SelectField,
+                     SelectMultipleField, 
+                     StringField)
+from wtforms.validators import URL, DataRequired, Regexp
 
 
 class ShowForm(Form):
@@ -84,21 +86,12 @@ class VenueForm(Form):
     )
     address = StringField(
         'address', validators=[DataRequired()]
-    )
-    
-    def validate_phone(field):
-        if len(field.data) != 10:
-            print('Invalid phone number.')
-        try:
-            input_number = phonenumbers.parse(field.data)
-            if not (phonenumbers.is_valid_number(input_number)):
-                print('Invalid phone number.')
-        except:
-            print(sys.exc_info())                    
-        
+    )  
+               
+      
     phone = StringField(
         'phone', validators=[DataRequired(), 
-                    validate_phone])
+            Regexp('\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}')])
     image_link = StringField(
         'image_link'
     )
@@ -205,19 +198,10 @@ class ArtistForm(Form):
             ('WY', 'WY'),
         ]
     )
-    def validate_phone(field):
-        if len(field.data) != 10:
-            print('Invalid phone number.')
-        try:
-            input_number = phonenumbers.parse(field.data)
-            if not (phonenumbers.is_valid_number(input_number)):
-                print('Invalid phone number.')
-        except:
-            print(sys.exc_info())                    
-        
+    
     phone = StringField(
         'phone', validators=[DataRequired(), 
-                    validate_phone])
+                Regexp('\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}')])
     image_link = StringField(
         'image_link'
     )

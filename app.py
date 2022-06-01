@@ -120,10 +120,10 @@ def show_venue(venue_id):
       "artist_image": show.artist.image_link,
       "start_time": str(show.start_time)
     }
-  if past_shows_query:
-    past_shows.append(show_obj)
-  else:
-    upcoming_shows.append(show_obj)
+    if past_shows_query:
+      past_shows.append(show_obj)
+    else:
+      upcoming_shows.append(show_obj)
   past_shows_count = len(past_shows)
   upcoming_shows_count = len(upcoming_shows)
   
@@ -248,10 +248,10 @@ def show_artist(artist_id):
         "image_link": show.venue.image_link,
         "start_time": str(show.start_time)
       }
-  if upcoming_shows_query:
-    upcoming_shows.append(show_obj)
-  else:
-    past_shows.append(show_obj)
+      if upcoming_shows_query:
+        upcoming_shows.append(show_obj)
+      else:
+        past_shows.append(show_obj)
   
   if artist is None:
         abort(404)

@@ -1,7 +1,10 @@
+import sys
+import phonenumbers
 from datetime import datetime
+from xml.dom import ValidationError
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL, Regexp, InputRequired
+from wtforms.validators import DataRequired, URL
 
 
 class ShowForm(Form):
@@ -83,10 +86,20 @@ class VenueForm(Form):
     address = StringField(
         'address', validators=[DataRequired()]
     )
+    
+    def validate_phone(field):
+        if len(field.data) != 10:
+            raise ValidationError('Invalid phone number.')
+        try:
+            input_number = phonenumbers.parse(field.data)
+            if not (phonenumbers.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
+        except:
+            print(sys.exc_info())                    
+        
     phone = StringField(
-        'phone', validators=[InputRequired(), 
-                 Regexp('\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}')]
-    )
+        'phone', validators=[DataRequired(), 
+                    validate_phone])
     image_link = StringField(
         'image_link'
     )
@@ -193,11 +206,19 @@ class ArtistForm(Form):
             ('WY', 'WY'),
         ]
     )
+    def validate_phone(field):
+        if len(field.data) != 10:
+            raise ValidationError('Invalid phone number.')
+        try:
+            input_number = phonenumbers.parse(field.data)
+            if not (phonenumbers.is_valid_number(input_number)):
+                raise ValidationError('Invalid phone number.')
+        except:
+            print(sys.exc_info())                    
+        
     phone = StringField(
-        # TODO implement validation logic for state
-        'phone', validators=[InputRequired(), 
-                 Regexp('\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}')]
-    )
+        'phone', validators=[DataRequired(), 
+                    validate_phone])
     image_link = StringField(
         'image_link'
     )

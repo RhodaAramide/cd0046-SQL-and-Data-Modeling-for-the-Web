@@ -1,10 +1,9 @@
 
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_moment import Moment
 from datetime import datetime
-import dateutil.parser
+
 
 db = SQLAlchemy()
 
@@ -33,8 +32,7 @@ class Venue(db.Model):
       return f'<Venue {self.id} {self.name} {self.city} {self.state}>'
     
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
+    
 class Show(db.Model):
       __tablename__ = 'Show'
       
@@ -68,6 +66,4 @@ class Artist(db.Model):
 
     
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+    

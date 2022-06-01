@@ -36,7 +36,7 @@ app.config.from_object('config')
 db.init_app(app)
 migrate = Migrate(app, db)
 
-
+# app.config['SQLALCHEMY_DATABASE_URI']
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -57,10 +57,8 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 
 @app.route('/')
-def index():
-  venues = Venue.query.order_by(desc(Venue.created_date)).limit(10).all()
-  artists = Artist.query.order_by(desc(Artist.created_date)).limit(10).all()  
-  return render_template('pages/home.html', venues=venues, artists=artists)
+def index():  
+  return render_template('pages/home.html')
 
 
 #  Venues
@@ -111,7 +109,8 @@ def search_venues():
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   venue = db.session.query(Venue).filter_by(id=venue_id).first()
-  past_shows_query = db.session.query(Show).join(Artist).filter(Show.venue_id==venue_id).filter(Show.start_time>datetime.now()).all()
+  past_shows_query = db.session.query(Show).filter(Show.venue_id==venue_id).filter(
+    Show.start_time<datetime.now()).join(Artist, Show.artist_id==Artist.id).all() 
   past_shows = []
   upcoming_shows = []
   for show in venue.show:
@@ -121,10 +120,10 @@ def show_venue(venue_id):
       "artist_image": show.artist.image_link,
       "start_time": str(show.start_time)
     }
-    if past_shows_query:
-      past_shows.append(show_obj)
-    else:
-      upcoming_shows.append(show_obj)
+  if past_shows_query:
+    past_shows.append(show_obj)
+  else:
+    upcoming_shows.append(show_obj)
   past_shows_count = len(past_shows)
   upcoming_shows_count = len(upcoming_shows)
   
@@ -236,22 +235,23 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   artist = db.session.query(Artist).filter_by(id=artist_id).first()
-  past_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_time>datetime.now()).all()
+  # past_shows_query = db.session.query(Show).filter(Show.artist_id==artist_id).filter(
+  #   Show.start_time<datetime.now()).join(Venue, Show.venue_id==Venue.id).all()
   past_shows = []
+  upcoming_shows_query = db.session.query(Show).filter(Show.artist_id==artist_id).filter(
+    Show.start_time>datetime.now()).join(Venue, Show.venue_id==Venue.id).all()
   upcoming_shows = []
   for show in artist.show:
-    show_obj = {
-      "venue_id": show.venue.id,
-      "venue_name": show.venue.name,
-      "venue_image": show.venue.image_link,
-      "start_time": str(show.start_time)
-    }
-    if past_shows_query:
-      past_shows.append(show_obj)
-    else:
-      upcoming_shows.append(show_obj)
-  past_shows_count = len(past_shows)
-  upcoming_shows_count = len(upcoming_shows)
+      show_obj = {
+        "artist_id":show.venue.id,
+        "artist_name": show.venue.name,
+        "image_link": show.venue.image_link,
+        "start_time": str(show.start_time)
+      }
+  if upcoming_shows_query:
+    upcoming_shows.append(show_obj)
+  else:
+    past_shows.append(show_obj)
   
   if artist is None:
         abort(404)
@@ -268,9 +268,9 @@ def show_artist(artist_id):
     "seeking_description": artist.seeking_description,
     "image_link": artist.image_link,
     "past_shows": past_shows,
-    "past_shows_count": past_shows_count,
+    "past_shows_count": len(past_shows),
     "upcoming_shows": upcoming_shows,
-    "upcoming_shows_count": upcoming_shows_count     
+    "upcoming_shows_count": len(upcoming_shows)     
   }
   return render_template('pages/show_artist.html', artist=data)
 

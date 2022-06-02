@@ -227,9 +227,9 @@ def show_artist(artist_id):
 
   for show in artist.show:
       temp_show = {
-          'artist_id': show.venue_id,
-          'artist_name': show.venue.name,
-          'artist_image_link': show.venue.image_link,
+          'venue_id': show.venue_id,
+          'venue_name': show.venue.name,
+          'venue_image_link': show.venue.image_link,
           'start_time': show.start_time.strftime("%m/%d/%Y, %H:%M")
       }
       if show.start_time <= datetime.now():

@@ -296,6 +296,7 @@ def edit_artist_submission(artist_id):
       db.session.close()
   else:
       print(form.errors)
+      flash('Error editing artist!')
       
   return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -341,8 +342,6 @@ def edit_venue_submission(venue_id):
     venue.seeking_description = form.seeking_description.data 
     try:    
       db.session.add(venue)
-      print(form.data)
-      print(venue)
       db.session.commit()
     except Exception as error:
       print(error)

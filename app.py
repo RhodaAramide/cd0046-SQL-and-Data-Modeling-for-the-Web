@@ -6,6 +6,7 @@ from os import abort
 import sys
 from wsgiref.simple_server import sys_version
 import dateutil.parser
+from datetime import datetime
 import babel
 from sqlalchemy import desc
 import config
@@ -66,25 +67,23 @@ def index():
 
 @app.route('/venues')
 def venues():
-  city_states = db.session.query(Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
   data = []
-    
-  for city_state in city_states:
-    venues = db.session.query(Venue).filter(Venue.city == city_state.city, Venue.state == city_state.state).all()
-    
-    venues_list = []
-    for venue in venues:
-      venues_list.append({
-        'id': venue.id,
-        'name': venue.name,
-        'num_upcoming_shows': len(db.session.query(Show).filter(Show.start_time > datetime.now()).all())
-      })
-      
+  venues = Venue.query.all()
+
+  areas = Venue.query.distinct(Venue.city, Venue.state).all()
+
+  for area in areas:
       data.append({
-        "city": city_state.city,
-        "state": city_state.state,
-        "venues": venues_list
+          'city': area.city,
+          'state': area.state,
+          'venues': [{
+              'id': venue.id,
+              'name': venue.name,
+              'num_upcoming_shows': len([show for show in venue.show if show.start_time > datetime.now()])
+          } for venue in venues if
+              venue.city == area.city and venue.state == area.state]
       })
+
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -96,7 +95,7 @@ def search_venues():
     venues_list.append({
       "id": venue.id,
       "name": venue.name,
-      "num_upcoming_shows": len(db.session.query(Show).filter(Show.start_time > datetime.now()).all()) 
+      "num_upcoming_shows": len([show for show in venue.show if show.start_time > datetime.now()]) 
     })    
   count = len(venues)
   response={
@@ -108,45 +107,32 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
-  venue = db.session.query(Venue).filter_by(id=venue_id).first()
-  past_shows_query = db.session.query(Show).filter(Show.venue_id==venue_id).filter(
-    Show.start_time<datetime.now()).join(Artist, Show.artist_id==Artist.id).all() 
+  venue = Venue.query.get_or_404(venue_id)
+
   past_shows = []
   upcoming_shows = []
+
   for show in venue.show:
-    show_obj = {
-      "artist_id": show.artist.id,
-      "artist_name": show.artist.name,
-      "artist_image": show.artist.image_link,
-      "start_time": str(show.start_time)
-    }
-    if past_shows_query:
-      past_shows.append(show_obj)
-    else:
-      upcoming_shows.append(show_obj)
-  past_shows_count = len(past_shows)
-  upcoming_shows_count = len(upcoming_shows)
+      temp_show = {
+          'artist_id': show.artist_id,
+          'artist_name': show.artist.name,
+          'artist_image_link': show.artist.image_link,
+          'start_time': show.start_time.strftime("%m/%d/%Y, %H:%M")
+      }
+      if show.start_time <= datetime.now():
+          past_shows.append(temp_show)
+      else:
+          upcoming_shows.append(temp_show)
+
+  # object class to dict
+  data = vars(venue)
+
+  data['past_shows'] = past_shows
+  data['upcoming_shows'] = upcoming_shows
+  data['past_shows_count'] = len(past_shows)
+  data['upcoming_shows_count'] = len(upcoming_shows)
+  print(data)
   
-  if venue is None:
-        abort(404)
-  data = {
-    "id": venue.id,
-    "name": venue.name,
-    "genres": [venue.genres],
-    "city": venue.city,
-    "state": venue.state,
-    "phone": venue.phone,
-    "address": venue.address,
-    "website_link": venue.website_link,
-    "facebook_link": venue.facebook_link,
-    "seeking_talent": venue.seeking_talent,
-    "seeking_description": venue.seeking_description,
-    "image_link": venue.image_link,
-    "past_shows": past_shows,
-    "past_shows_count": past_shows_count,
-    "upcoming_shows": upcoming_shows,
-    "upcoming_shows_count": upcoming_shows_count     
-  }
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -222,7 +208,7 @@ def search_artists():
     artists_list.append({
       "id": artist.id,
       "name": artist.name,
-      "num_upcoming_shows": len(db.session.query(Show).filter(Show.start_time > datetime.now()).all())
+      "num_upcoming_shows": len([show for show in artist.show if show.start_time > datetime.now()])
     }) 
   count = len(artists)
   response={
@@ -234,44 +220,31 @@ def search_artists():
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
-  artist = db.session.query(Artist).filter_by(id=artist_id).first()
-  # past_shows_query = db.session.query(Show).filter(Show.artist_id==artist_id).filter(
-  #   Show.start_time<datetime.now()).join(Venue, Show.venue_id==Venue.id).all()
+  artist = Artist.query.get_or_404(artist_id)
+
   past_shows = []
-  upcoming_shows_query = db.session.query(Show).filter(Show.artist_id==artist_id).filter(
-    Show.start_time>datetime.now()).join(Venue, Show.venue_id==Venue.id).all()
   upcoming_shows = []
+
   for show in artist.show:
-      show_obj = {
-        "artist_id":show.venue.id,
-        "artist_name": show.venue.name,
-        "image_link": show.venue.image_link,
-        "start_time": str(show.start_time)
+      temp_show = {
+          'artist_id': show.venue_id,
+          'artist_name': show.venue.name,
+          'artist_image_link': show.venue.image_link,
+          'start_time': show.start_time.strftime("%m/%d/%Y, %H:%M")
       }
-      if upcoming_shows_query:
-        upcoming_shows.append(show_obj)
+      if show.start_time <= datetime.now():
+          past_shows.append(temp_show)
       else:
-        past_shows.append(show_obj)
+          upcoming_shows.append(temp_show)
+
+  # object class to dict
+  data = vars(artist)
+
+  data['past_shows'] = past_shows
+  data['upcoming_shows'] = upcoming_shows
+  data['past_shows_count'] = len(past_shows)
+  data['upcoming_shows_count'] = len(upcoming_shows)
   
-  if artist is None:
-        abort(404)
-  data = {
-    "id": artist.id,
-    "name": artist.name,
-    "genres": [artist.genres],
-    "city": artist.city,
-    "state": artist.state,
-    "phone": artist.phone,    
-    "website_link": artist.website_link,
-    "facebook_link": artist.facebook_link,
-    "seeking_venue": artist.seeking_venue,
-    "seeking_description": artist.seeking_description,
-    "image_link": artist.image_link,
-    "past_shows": past_shows,
-    "past_shows_count": len(past_shows),
-    "upcoming_shows": upcoming_shows,
-    "upcoming_shows_count": len(upcoming_shows)     
-  }
   return render_template('pages/show_artist.html', artist=data)
 
 
@@ -286,7 +259,7 @@ def edit_artist(artist_id):
   artist = {
     "id": artist.id,
     "name": artist.name,
-    "genres": [artist.genres],
+    "genres": artist.genres,
     "city": artist.city,
     "state": artist.state,
     "phone": artist.phone,    
@@ -333,10 +306,11 @@ def edit_venue(venue_id):
   form = VenueForm(obj=venue)
   print(venue.city)
   print(form.data)
+  print
   venue={    
     "id": venue.id,
     "name": venue.name,
-    "genres": [venue.genres],
+    "genres": venue.genres,
     "city": venue.city,
     "state": venue.state,
     "phone": venue.phone,
@@ -367,6 +341,8 @@ def edit_venue_submission(venue_id):
     venue.seeking_description = form.seeking_description.data 
     try:    
       db.session.add(venue)
+      print(form.data)
+      print(venue)
       db.session.commit()
     except Exception as error:
       print(error)
@@ -375,6 +351,7 @@ def edit_venue_submission(venue_id):
       db.session.close()
   else:
       print(form.errors)
+      flash('Error editing venue!')
   
   
   return redirect(url_for('show_venue', venue_id=venue_id))
